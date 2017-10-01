@@ -37,7 +37,7 @@ namespace LegacyStandalone.Web.Controllers.Work
         [Route("Inbox/{pageIndex}/{pageSize}/{mailType?}")]
         public async Task<PaginatedItemsViewModel<InboxMailViewModel>> GetInbox(int pageIndex, int pageSize, MailType? mailType = null)
         {
-            var exp = _internalMailToRepository.AllIncluding(x => x.Mail).Where(x => x.UserName == UserName && !x.HasDeleted);
+            var exp = _internalMailToRepository.AllIncluding(x => x.Mail).Where(x => x.UserName == CurrentUserName && !x.HasDeleted);
             if (mailType != null)
             {
                 exp = exp.Where(x => x.Mail.MailType == mailType);
@@ -72,7 +72,7 @@ namespace LegacyStandalone.Web.Controllers.Work
         public async Task<IEnumerable<InboxMailViewModel>> GetUnread()
         {
             var items = await _internalMailToRepository.AllIncluding(x => x.Mail)
-                .Where(x => x.UserName == UserName && !x.HasRead && !x.HasDeleted).ToListAsync();
+                .Where(x => x.UserName == CurrentUserName && !x.HasRead && !x.HasDeleted).ToListAsync();
             var vms = items.Select(x => new InboxMailViewModel
             {
                 Id = x.Mail.Id,
@@ -97,25 +97,25 @@ namespace LegacyStandalone.Web.Controllers.Work
         [Route("UnreadCount")]
         public async Task<IHttpActionResult> GetUnreadCount()
         {
-            var count = await _internalMailToRepository.All.Where(x => x.UserName == UserName && !x.HasRead && !x.HasDeleted).CountAsync();
+            var count = await _internalMailToRepository.All.Where(x => x.UserName == CurrentUserName && !x.HasRead && !x.HasDeleted).CountAsync();
             return Ok(new { count });
         }
 
         public async Task<IHttpActionResult> GetOne(int id)
         {
-            var mail = await _internalMailRepository.GetSingleAsync(x => x.Id == id && (x.UserName == UserName || x.Tos.Any(y => y.UserName == UserName)), x => x.Tos, x => x.Attachments);
+            var mail = await _internalMailRepository.GetSingleAsync(x => x.Id == id && (x.UserName == CurrentUserName || x.Tos.Any(y => y.UserName == CurrentUserName)), x => x.Tos, x => x.Attachments);
             if (mail == null)
             {
                 return NotFound();
             }
-            if (mail.Tos.Any(x => x.UserName == UserName && !x.HasRead))
+            if (mail.Tos.Any(x => x.UserName == CurrentUserName && !x.HasRead))
             {
-                var to = mail.Tos.SingleOrDefault(x => x.UserName == UserName);
+                var to = mail.Tos.SingleOrDefault(x => x.UserName == CurrentUserName);
                 if (to != null)
                 {
                     to.HasRead = true;
                     to.ReadTime = Now;
-                    to.UpdateUser = UserName;
+                    to.UpdateUser = CurrentUserName;
                     to.UpdateTime = Now;
                     to.LastAction = "阅读";
                     _internalMailToRepository.Update(to);
@@ -131,12 +131,12 @@ namespace LegacyStandalone.Web.Controllers.Work
         public async Task<IHttpActionResult> MarkAsRead(JObject jObj)
         {
             var ids = jObj["ids"].ToObject<List<int>>();
-            var tos = await _internalMailToRepository.All.Where(x => x.UserName == UserName && ids.Contains(x.Id)).ToListAsync();
+            var tos = await _internalMailToRepository.All.Where(x => x.UserName == CurrentUserName && ids.Contains(x.Id)).ToListAsync();
             foreach (var to in tos)
             {
                 to.HasRead = true;
                 to.UpdateTime = Now;
-                to.UpdateUser = UserName;
+                to.UpdateUser = CurrentUserName;
                 to.LastAction = "设为已读";
                 _internalMailToRepository.Update(to);
             }
@@ -149,12 +149,12 @@ namespace LegacyStandalone.Web.Controllers.Work
         public async Task<IHttpActionResult> MarkAsUnread(JObject jObj)
         {
             var ids = jObj["ids"].ToObject<List<int>>();
-            var tos = await _internalMailToRepository.All.Where(x => x.UserName == UserName && ids.Contains(x.Id)).ToListAsync();
+            var tos = await _internalMailToRepository.All.Where(x => x.UserName == CurrentUserName && ids.Contains(x.Id)).ToListAsync();
             foreach (var to in tos)
             {
                 to.HasRead = false;
                 to.UpdateTime = Now;
-                to.UpdateUser = UserName;
+                to.UpdateUser = CurrentUserName;
                 to.LastAction = "设为未读";
                 _internalMailToRepository.Update(to);
             }
@@ -167,12 +167,12 @@ namespace LegacyStandalone.Web.Controllers.Work
         public async Task<IHttpActionResult> DeleteInbox(JObject jObj)
         {
             var ids = jObj["ids"].ToObject<List<int>>();
-            var tos = await _internalMailToRepository.All.Where(x => x.UserName == UserName && ids.Contains(x.Id)).ToListAsync();
+            var tos = await _internalMailToRepository.All.Where(x => x.UserName == CurrentUserName && ids.Contains(x.Id)).ToListAsync();
             foreach (var to in tos)
             {
                 to.HasDeleted = true;
                 to.UpdateTime = Now;
-                to.UpdateUser = UserName;
+                to.UpdateUser = CurrentUserName;
                 to.LastAction = "删除";
                 _internalMailToRepository.Update(to);
             }
@@ -183,7 +183,7 @@ namespace LegacyStandalone.Web.Controllers.Work
         [Route("Sent/{pageIndex}/{pageSize}")]
         public async Task<PaginatedItemsViewModel<SentMailViewModel>> GetSent(int pageIndex, int pageSize)
         {
-            var exp = _internalMailRepository.AllIncluding(x => x.Tos, x => x.Attachments).Where(x => x.UserName == UserName && !x.HasDeleted);
+            var exp = _internalMailRepository.AllIncluding(x => x.Tos, x => x.Attachments).Where(x => x.UserName == CurrentUserName && !x.HasDeleted);
             var items = await exp.OrderByDescending(x => x.Id)
                 .Skip(pageIndex * pageSize).Take(pageSize).ToListAsync();
             var count = await exp.CountAsync();
@@ -197,12 +197,12 @@ namespace LegacyStandalone.Web.Controllers.Work
         public async Task<IHttpActionResult> DeleteSent(JObject jObj)
         {
             var ids = jObj["ids"].ToObject<List<int>>();
-            var mails = await _internalMailRepository.All.Where(x => x.UserName == UserName && ids.Contains(x.Id)).ToListAsync();
+            var mails = await _internalMailRepository.All.Where(x => x.UserName == CurrentUserName && ids.Contains(x.Id)).ToListAsync();
             foreach (var mail in mails)
             {
                 mail.HasDeleted = true;
                 mail.UpdateTime = Now;
-                mail.UpdateUser = UserName;
+                mail.UpdateUser = CurrentUserName;
                 mail.LastAction = "删除";
                 _internalMailRepository.Update(mail);
             }
@@ -213,7 +213,7 @@ namespace LegacyStandalone.Web.Controllers.Work
         [Route("TrashBox/{pageIndex}/{pageSize}")]
         public async Task<PaginatedItemsViewModel<InternalMailViewModel>> GetTrashBox(int pageIndex, int pageSize)
         {
-            var exp = _internalMailRepository.AllIncluding(x => x.Tos, x => x.Attachments).Where(x => (x.UserName == UserName && x.HasDeleted) || x.Tos.Any(y => y.UserName == UserName && y.HasDeleted));
+            var exp = _internalMailRepository.AllIncluding(x => x.Tos, x => x.Attachments).Where(x => (x.UserName == CurrentUserName && x.HasDeleted) || x.Tos.Any(y => y.UserName == CurrentUserName && y.HasDeleted));
             var items = await exp.OrderByDescending(x => x.Id)
                 .Skip(pageIndex * pageSize).Take(pageSize).ToListAsync();
             var count = await exp.CountAsync();
@@ -229,7 +229,7 @@ namespace LegacyStandalone.Web.Controllers.Work
             var attachmentVms = obj["attachments"].ToObject<List<UploadedFileViewModel>>();
 
             var newMailModel = Mapper.Map<InternalMailViewModel, InternalMail>(mail);
-            newMailModel.UserName = UserName;
+            newMailModel.UserName = CurrentUserName;
             newMailModel.SendTime = Now;
             newMailModel.CreateUser = newMailModel.UpdateUser = User.Identity.Name;
             newMailModel.LastAction = "发送消息";
@@ -237,9 +237,9 @@ namespace LegacyStandalone.Web.Controllers.Work
             {
                 UserName = x,
                 CreateTime = Now,
-                CreateUser = UserName,
+                CreateUser = CurrentUserName,
                 UpdateTime = Now,
-                UpdateUser = UserName,
+                UpdateUser = CurrentUserName,
                 LastAction = "发送消息"
             }).ToList();
             var attachments = attachmentVms.Select(x => new InternalMailAttachment
@@ -249,9 +249,9 @@ namespace LegacyStandalone.Web.Controllers.Work
                 Size = x.Size,
                 Path = x.Path,
                 CreateTime = Now,
-                CreateUser = UserName,
+                CreateUser = CurrentUserName,
                 UpdateTime = Now,
-                UpdateUser = UserName,
+                UpdateUser = CurrentUserName,
                 LastAction = "发送消息"
             }).ToList();
             newMailModel.Tos = tos;
@@ -264,24 +264,24 @@ namespace LegacyStandalone.Web.Controllers.Work
 
         public async Task<IHttpActionResult> Delete(int id)
         {
-            var mail = await _internalMailRepository.GetSingleAsync(x => x.Id == id && (x.UserName == UserName || x.Tos.Any(y => y.UserName == UserName)), x => x.Tos);
+            var mail = await _internalMailRepository.GetSingleAsync(x => x.Id == id && (x.UserName == CurrentUserName || x.Tos.Any(y => y.UserName == CurrentUserName)), x => x.Tos);
             if (mail == null)
             {
                 return NotFound();
             }
-            if (mail.UserName == UserName)
+            if (mail.UserName == CurrentUserName)
             {
                 mail.HasDeleted = true;
-                mail.UpdateUser = UserName;
+                mail.UpdateUser = CurrentUserName;
                 mail.UpdateTime = Now;
                 mail.LastAction = "删除";
                 _internalMailRepository.Update(mail);
             }
-            var to = mail.Tos.SingleOrDefault(x => x.UserName == UserName);
+            var to = mail.Tos.SingleOrDefault(x => x.UserName == CurrentUserName);
             if (to != null)
             {
                 to.HasDeleted = true;
-                to.UpdateUser = UserName;
+                to.UpdateUser = CurrentUserName;
                 to.UpdateTime = Now;
                 to.LastAction = "删除";
                 _internalMailToRepository.Update(to);

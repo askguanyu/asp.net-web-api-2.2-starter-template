@@ -1,4 +1,5 @@
 ﻿using System.Web.Http;
+using LegacyStandalone.Web.MyConfigurations.Log;
 using LegacyStandalone.Web.MyConfigurations.Mapping;
 
 namespace LegacyStandalone.Web.MyConfigurations
@@ -7,9 +8,11 @@ namespace LegacyStandalone.Web.MyConfigurations
     {
         public static void Run()
         {
+            // Serilog
+            SerilogConfiguration.CreateLogger();
             // Configure Autofac
             AutofacWebapiConfig.Initialize(GlobalConfiguration.Configuration);
-            //Configure AutoMapper
+            // Configure AutoMapper
             AutoMapperConfiguration.Configure();
         }
     }

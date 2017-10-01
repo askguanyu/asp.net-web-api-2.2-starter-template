@@ -1,20 +1,24 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Web.Http.ExceptionHandling;
-using NLog;
+using Serilog.Context;
 
 namespace LegacyStandalone.Web.MyConfigurations.Exceptions
 {
     public class MyExceptionLogger : ExceptionLogger
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
         public override void Log(ExceptionLoggerContext context)
         {
 #if DEBUG
             Trace.TraceError(context.ExceptionContext.Exception.ToString());
 #endif
-            LogException(context.ExceptionContext.Exception);
+            using (LogContext.PushProperty("Class",
+                context.ExceptionContext.ControllerContext.ControllerDescriptor.ControllerType))
+            using (LogContext.PushProperty("User",
+                context.RequestContext.Principal.Identity.Name))
+            {
+                LogException(context.ExceptionContext.Exception);
+            }
         }
 
         private void LogException(Exception ex)
@@ -22,7 +26,7 @@ namespace LegacyStandalone.Web.MyConfigurations.Exceptions
             if (ex != null)
             {
                 LogException(ex.InnerException);
-                Logger.Error(ex.ToString());
+                Serilog.Log.Logger.Error(ex.ToString());
             }
         }
     }

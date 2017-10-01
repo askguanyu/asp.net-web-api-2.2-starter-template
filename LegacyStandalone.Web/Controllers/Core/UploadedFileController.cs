@@ -3,6 +3,7 @@ using System.Web.Http;
 using LegacyApplication.Database.Infrastructure;
 using LegacyStandalone.Web.Controllers.Bases;
 using LegacyApplication.Services.Core;
+using Serilog;
 
 namespace LegacyStandalone.Web.Controllers.Core
 {
@@ -12,6 +13,9 @@ namespace LegacyStandalone.Web.Controllers.Core
             IUnitOfWork unitOfWork)
             : base(commonService, unitOfWork)
         {
+            LogInformation("----------------------------------");
+            LogDebug("----------------------------------");
+            LogVerbose("-------------------------");
         }
 
         [AllowAnonymous]
@@ -37,5 +41,6 @@ namespace LegacyStandalone.Web.Controllers.Core
         {
             return GetFileByPath(path);
         }
+        
     }
 }

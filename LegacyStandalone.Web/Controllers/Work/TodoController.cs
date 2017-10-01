@@ -29,14 +29,14 @@ namespace LegacyStandalone.Web.Controllers.Work
 
         public async Task<IEnumerable<TodoViewModel>> Get()
         {
-            var models = await _todoRepository.All.Where(x => x.UserName == UserName && !x.Deleted && !x.Completed).OrderBy(x => x.Order).ToListAsync();
+            var models = await _todoRepository.All.Where(x => x.UserName == CurrentUserName && !x.Deleted && !x.Completed).OrderBy(x => x.Order).ToListAsync();
             var viewModels = Mapper.Map<IEnumerable<Todo>, IEnumerable<TodoViewModel>>(models);
             return viewModels;
         }
 
         public async Task<IHttpActionResult> GetOne(int id)
         {
-            var model = await _todoRepository.GetSingleAsync(x => x.Id == id && x.UserName == UserName);
+            var model = await _todoRepository.GetSingleAsync(x => x.Id == id && x.UserName == CurrentUserName);
             if (model != null)
             {
                 var viewModel = Mapper.Map<Todo, TodoViewModel>(model);
@@ -51,7 +51,7 @@ namespace LegacyStandalone.Web.Controllers.Work
             {
                 return BadRequest(ModelState);
             }
-            viewModel.UserName = UserName;
+            viewModel.UserName = CurrentUserName;
             var newModel = Mapper.Map<TodoViewModel, Todo>(viewModel);
             newModel.CreateUser = newModel.UpdateUser = User.Identity.Name;
             _todoRepository.Add(newModel);

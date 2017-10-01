@@ -30,14 +30,14 @@ namespace LegacyStandalone.Web.Controllers.Work
 
         public async Task<IEnumerable<ScheduleViewModel>> Get()
         {
-            var models = await _scheduleRepository.All.Where(x => x.UserName == UserName && x.End >= Now).ToListAsync();
+            var models = await _scheduleRepository.All.Where(x => x.UserName == CurrentUserName && x.End >= Now).ToListAsync();
             var viewModels = Mapper.Map<IEnumerable<Schedule>, IEnumerable<ScheduleViewModel>>(models);
             return viewModels;
         }
 
         public async Task<IHttpActionResult> GetOne(int id)
         {
-            var model = await _scheduleRepository.GetSingleAsync(x => x.Id == id && x.UserName == UserName);
+            var model = await _scheduleRepository.GetSingleAsync(x => x.Id == id && x.UserName == CurrentUserName);
             if (model != null)
             {
                 var viewModel = Mapper.Map<Schedule, ScheduleViewModel>(model);
@@ -52,7 +52,7 @@ namespace LegacyStandalone.Web.Controllers.Work
             {
                 return BadRequest(ModelState);
             }
-            viewModel.UserName = UserName;
+            viewModel.UserName = CurrentUserName;
             var newModel = Mapper.Map<ScheduleViewModel, Schedule>(viewModel);
             newModel.CreateUser = newModel.UpdateUser = User.Identity.Name;
             _scheduleRepository.Add(newModel);
@@ -96,7 +96,7 @@ namespace LegacyStandalone.Web.Controllers.Work
         public async Task<IEnumerable<ScheduleViewModel>> GetByRange(DateTime start, DateTime? end = null)
         {
             var endTime = end?.AddDays(1) ?? start.AddMonths(2);
-            var models = await _scheduleRepository.All.Where(x => x.UserName == UserName &&
+            var models = await _scheduleRepository.All.Where(x => x.UserName == CurrentUserName &&
                 ((x.Start <= start && x.End >= start)
                 || (x.Start >= start && x.End < endTime)
                 || (x.Start < endTime && x.End >= endTime)

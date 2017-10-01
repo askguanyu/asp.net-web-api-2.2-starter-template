@@ -24,6 +24,9 @@ using LegacyApplication.ViewModels.Core;
 using LegacyStandalone.Web.Controllers.Core;
 using LegacyStandalone.Web.Models;
 using Microsoft.AspNet.Identity.Owin;
+using Serilog;
+using Serilog.Context;
+using Serilog.Events;
 
 namespace LegacyStandalone.Web.Controllers.Bases
 {
@@ -33,6 +36,7 @@ namespace LegacyStandalone.Web.Controllers.Bases
         protected readonly IUnitOfWork UnitOfWork;
         protected readonly IDepartmentRepository DepartmentRepository;
         protected readonly IUploadedFileRepository UploadedFileRepository;
+        protected readonly ILogger Log;
 
         protected ApiControllerBase(
             ICommonService commonService,
@@ -42,26 +46,27 @@ namespace LegacyStandalone.Web.Controllers.Bases
             UnitOfWork = untOfWork;
             DepartmentRepository = commonService.DepartmentRepository;
             UploadedFileRepository = commonService.UploadedFileRepository;
+            Log = commonService.Log;
         }
 
         #region Current Information
 
         protected DateTime Now => DateTime.Now;
-        protected string UserName => User.Identity.Name;
+        protected string CurrentUserName => User.Identity.Name;
 
         protected ApplicationUserManager UserManager => Request.GetOwinContext().GetUserManager<ApplicationUserManager>();
 
         [NonAction]
         protected async Task<ApplicationUser> GetMeAsync()
         {
-            var me = await UserManager.FindByNameAsync(UserName);
+            var me = await UserManager.FindByNameAsync(CurrentUserName);
             return me;
         }
 
         [NonAction]
         protected async Task<Department> GetMyDepartmentEvenNull()
         {
-            var department = await DepartmentRepository.GetSingleAsync(x => x.Employees.Any(y => y.No == UserName));
+            var department = await DepartmentRepository.GetSingleAsync(x => x.Employees.Any(y => y.No == CurrentUserName));
             return department;
         }
 
@@ -74,6 +79,56 @@ namespace LegacyStandalone.Web.Controllers.Bases
                 throw new Exception("您不属于任何单位/部门");
             }
             return department;
+        }
+
+        #endregion
+
+        #region Logging
+
+        [NonAction]
+        protected void LogByLevel(LogEventLevel level, string msg)
+        {
+            using (LogContext.PushProperty("Class", GetType().FullName))
+            using (LogContext.PushProperty("User", CurrentUserName))
+            {
+                Log.Write(level, $"{msg} (by {CurrentUserName}, at {Now:yyyy-MM-dd HH:mm:ss.FFF})");
+            }
+        }
+
+        [NonAction]
+        protected void LogVerbose(string msg)
+        {
+            LogByLevel(LogEventLevel.Verbose, msg);
+        }
+
+        [NonAction]
+        protected void LogDebug(string msg)
+        {
+            LogByLevel(LogEventLevel.Debug, msg);
+        }
+
+        [NonAction]
+        protected void LogInformation(string msg)
+        {
+            LogByLevel(LogEventLevel.Information, msg);
+        }
+
+        [NonAction]
+        protected void LogWarning(string msg)
+        {
+            LogByLevel(LogEventLevel.Warning, msg);
+        }
+
+        [NonAction]
+        protected void LogError(string msg)
+        {
+            LogByLevel(LogEventLevel.Error, msg);
+        }
+
+        [NonAction]
+        protected void LogFatal(string msg)
+        {
+            LogByLevel(LogEventLevel.Fatal, msg);
         }
 
         #endregion

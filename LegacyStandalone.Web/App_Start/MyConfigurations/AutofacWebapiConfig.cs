@@ -2,6 +2,7 @@
 using System.Web.Http;
 using Autofac;
 using Autofac.Integration.WebApi;
+using AutofacSerilogIntegration;
 using LegacyApplication.Database.Context;
 using LegacyApplication.Database.Infrastructure;
 using LegacyApplication.Repositories.Core;
@@ -27,29 +28,29 @@ namespace LegacyStandalone.Web.MyConfigurations
 
         private static IContainer RegisterServices(ContainerBuilder builder)
         {
-            builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
-            
-            //builder.RegisterType<CoreContext>()
-            //       .As<DbContext>()
-            //       .InstancePerRequest();
+            // Serilog
+            builder.RegisterLogger(autowireProperties: true);
 
+            builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
+
+            // DbContext
             builder.RegisterType<CoreContext>().As<IUnitOfWork>().InstancePerRequest();
 
-            //Services
+            // Services
             builder.RegisterType<CommonService>().As<ICommonService>().InstancePerRequest();
             builder.RegisterType<InternalMailService>().As<IInternalMailService>().InstancePerRequest();
 
-            //Core
+            // Core
             builder.RegisterType<UploadedFileRepository>().As<IUploadedFileRepository>().InstancePerRequest();
 
-            //Work
+            // Work
             builder.RegisterType<InternalMailRepository>().As<IInternalMailRepository>().InstancePerRequest();
             builder.RegisterType<InternalMailToRepository>().As<IInternalMailToRepository>().InstancePerRequest();
             builder.RegisterType<InternalMailAttachmentRepository>().As<IInternalMailAttachmentRepository>().InstancePerRequest();
             builder.RegisterType<TodoRepository>().As<ITodoRepository>().InstancePerRequest();
             builder.RegisterType<ScheduleRepository>().As<IScheduleRepository>().InstancePerRequest();
 
-            //HR
+            // HR
             builder.RegisterType<DepartmentRepository>().As<IDepartmentRepository>().InstancePerRequest();
             builder.RegisterType<EmployeeRepository>().As<IEmployeeRepository>().InstancePerRequest();
             builder.RegisterType<JobPostLevelRepository>().As<IJobPostLevelRepository>().InstancePerRequest();
@@ -57,7 +58,7 @@ namespace LegacyStandalone.Web.MyConfigurations
             builder.RegisterType<AdministrativeLevelRepository>().As<IAdministrativeLevelRepository>().InstancePerRequest();
             builder.RegisterType<TitleLevelRepository>().As<ITitleLevelRepository>().InstancePerRequest();
             builder.RegisterType<NationalityRepository>().As<INationalityRepository>().InstancePerRequest();
-            
+
             Container = builder.Build();
 
             return Container;
