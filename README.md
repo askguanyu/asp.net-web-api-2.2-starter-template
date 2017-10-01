@@ -10,7 +10,7 @@ I use this starter template for my company's projects including projects for gov
 
 
 ## Logging
-I use serilog for logging.  
+#### I use Serilog for logging.  
 The Serilog configuration is located in SerilogConfiguration.cs under the web project.  
 I add 3 sinks of serilogs, they are: mssql, rolling-file and output debug.  
 The minimum level for mssql is information level.  
