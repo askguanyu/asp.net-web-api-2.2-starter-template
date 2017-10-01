@@ -32,3 +32,5 @@ I also implemented some protected Log methods in ApiControllerBase, you can see 
 
 #### Global Exception Logger
 I use the static version of serilog in MyExceptionLogger for global exception logging.
+
+#### The rolling file sink is still not working, I'm working on it.
